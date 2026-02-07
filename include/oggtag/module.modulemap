@@ -1,0 +1,6 @@
+module oggtag {
+    header "oggtag.h"
+    header "oggtag_types.h"
+    header "oggtag_error.h"
+    export *
+}
