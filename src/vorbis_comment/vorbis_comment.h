@@ -9,7 +9,7 @@
 #ifndef VORBIS_COMMENT_H
 #define VORBIS_COMMENT_H
 
-#include "../util/buffer.h"
+#include <tag_common/buffer.h>
 #include <stddef.h>
 #include <stdint.h>
 

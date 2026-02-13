@@ -10,8 +10,8 @@
 #include "ogg/ogg_stream.h"
 #include "flac/flac_meta.h"
 #include "io/file_io.h"
-#include "util/buffer.h"
-#include "util/string_util.h"
+#include <tag_common/buffer.h>
+#include <tag_common/string_util.h>
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -232,7 +232,7 @@ static int ogg_read_comment_packet(oggtag_context_t *ctx,
     fio_seek(&ctx->fio, 0);
 
     dyn_buffer_t pkt;
-    buf_init(&pkt);
+    buffer_init(&pkt);
 
     int packet_num = 0;   /* count complete packets */
     int found = 0;
@@ -240,7 +240,7 @@ static int ogg_read_comment_packet(oggtag_context_t *ctx,
     while (!found) {
         ogg_page_t pg;
         if (ogg_page_read(&ctx->fio, &pg) < 0) {
-            buf_free(&pkt);
+            buffer_free(&pkt);
             return OGGTAG_ERR_TRUNCATED;
         }
 
@@ -254,7 +254,7 @@ static int ogg_read_comment_packet(oggtag_context_t *ctx,
         size_t data_off = 0;
         for (int i = 0; i < pg.num_segments; i++) {
             uint8_t seg = pg.segments[i];
-            buf_append(&pkt, pg.data + data_off, seg);
+            buffer_append(&pkt, pg.data + data_off, seg);
             data_off += seg;
 
             if (seg < 255) {
@@ -265,15 +265,15 @@ static int ogg_read_comment_packet(oggtag_context_t *ctx,
                     break;
                 }
                 packet_num++;
-                buf_free(&pkt);
-                buf_init(&pkt);
+                buffer_free(&pkt);
+                buffer_init(&pkt);
             }
         }
         ogg_page_free(&pg);
 
         /* Safety: if we've passed many pages without finding it, bail */
         if (packet_num > 3 && !found) {
-            buf_free(&pkt);
+            buffer_free(&pkt);
             return OGGTAG_ERR_NO_TAGS;
         }
     }
@@ -282,29 +282,29 @@ static int ogg_read_comment_packet(oggtag_context_t *ctx,
     size_t prefix_len = 0;
     if (ctx->format == FMT_OGG_VORBIS) {
         /* 0x03 "vorbis" = 7 bytes prefix, 1 byte framing at end */
-        if (pkt.size < 8) { buf_free(&pkt); return OGGTAG_ERR_CORRUPT; }
+        if (pkt.size < 8) { buffer_free(&pkt); return OGGTAG_ERR_CORRUPT; }
         prefix_len = 7;
         *vc_len = pkt.size - 7 - 1; /* strip prefix and framing byte */
     } else if (ctx->format == FMT_OGG_OPUS) {
         /* "OpusTags" = 8 bytes prefix, no framing */
-        if (pkt.size < 8) { buf_free(&pkt); return OGGTAG_ERR_CORRUPT; }
+        if (pkt.size < 8) { buffer_free(&pkt); return OGGTAG_ERR_CORRUPT; }
         prefix_len = 8;
         *vc_len = pkt.size - 8;
     } else if (ctx->format == FMT_OGG_FLAC) {
         /* Second packet in Ogg FLAC is the VC metadata block.
          * It starts with a 4-byte metadata block header. */
-        if (pkt.size < 4) { buf_free(&pkt); return OGGTAG_ERR_CORRUPT; }
+        if (pkt.size < 4) { buffer_free(&pkt); return OGGTAG_ERR_CORRUPT; }
         prefix_len = 4;
         *vc_len = pkt.size - 4;
     } else {
-        buf_free(&pkt);
+        buffer_free(&pkt);
         return OGGTAG_ERR_UNSUPPORTED;
     }
 
     *vc_data = (uint8_t *)malloc(*vc_len);
-    if (!*vc_data) { buf_free(&pkt); return OGGTAG_ERR_NO_MEMORY; }
+    if (!*vc_data) { buffer_free(&pkt); return OGGTAG_ERR_NO_MEMORY; }
     memcpy(*vc_data, pkt.data + prefix_len, *vc_len);
-    buf_free(&pkt);
+    buffer_free(&pkt);
     return OGGTAG_OK;
 }
 
@@ -430,16 +430,16 @@ static int ogg_write_tags(oggtag_context_t *ctx,
 {
     /* Build the full comment packet with codec prefix */
     dyn_buffer_t pkt;
-    buf_init(&pkt);
+    buffer_init(&pkt);
 
     if (ctx->format == FMT_OGG_VORBIS) {
         uint8_t prefix[7] = { 0x03, 'v','o','r','b','i','s' };
-        buf_append(&pkt, prefix, 7);
-        buf_append(&pkt, vc_raw, vc_raw_len);
-        buf_append_u8(&pkt, 0x01); /* framing bit */
+        buffer_append(&pkt, prefix, 7);
+        buffer_append(&pkt, vc_raw, vc_raw_len);
+        buffer_append_byte(&pkt, 0x01); /* framing bit */
     } else if (ctx->format == FMT_OGG_OPUS) {
-        buf_append(&pkt, "OpusTags", 8);
-        buf_append(&pkt, vc_raw, vc_raw_len);
+        buffer_append(&pkt, "OpusTags", 8);
+        buffer_append(&pkt, vc_raw, vc_raw_len);
     } else if (ctx->format == FMT_OGG_FLAC) {
         /* Metadata block header for VORBIS_COMMENT (type 4) */
         uint8_t bh[4];
@@ -447,8 +447,8 @@ static int ogg_write_tags(oggtag_context_t *ctx,
         bh[1] = (uint8_t)(vc_raw_len >> 16);
         bh[2] = (uint8_t)(vc_raw_len >> 8);
         bh[3] = (uint8_t)(vc_raw_len);
-        buf_append(&pkt, bh, 4);
-        buf_append(&pkt, vc_raw, vc_raw_len);
+        buffer_append(&pkt, bh, 4);
+        buffer_append(&pkt, vc_raw, vc_raw_len);
     } else {
         return OGGTAG_ERR_UNSUPPORTED;
     }
@@ -469,7 +469,7 @@ static int ogg_write_tags(oggtag_context_t *ctx,
         num_header_packets = 2; /* head, tags */
 
     dyn_buffer_t packets[3];
-    for (int i = 0; i < 3; i++) buf_init(&packets[i]);
+    for (int i = 0; i < 3; i++) buffer_init(&packets[i]);
 
     int pkt_idx = 0;
     off_t audio_start = 0;
@@ -488,7 +488,7 @@ static int ogg_write_tags(oggtag_context_t *ctx,
         for (int i = 0; i < pg.num_segments && !done_headers; i++) {
             uint8_t seg = pg.segments[i];
             if (pkt_idx < num_header_packets)
-                buf_append(&packets[pkt_idx], pg.data + data_off, seg);
+                buffer_append(&packets[pkt_idx], pg.data + data_off, seg);
             data_off += seg;
 
             if (seg < 255) {
@@ -526,14 +526,14 @@ static int ogg_write_tags(oggtag_context_t *ctx,
     }
 
     /* Replace comment packet (index 1) with our new one */
-    buf_free(&packets[1]);
+    buffer_free(&packets[1]);
     packets[1] = pkt; /* transfer ownership */
 
     /* Write to temp file */
     size_t pathlen = strlen(ctx->path);
     char *tmp_path = (char *)malloc(pathlen + 8);
     if (!tmp_path) {
-        for (int i = 0; i < num_header_packets; i++) buf_free(&packets[i]);
+        for (int i = 0; i < num_header_packets; i++) buffer_free(&packets[i]);
         return OGGTAG_ERR_NO_MEMORY;
     }
     snprintf(tmp_path, pathlen + 8, "%s.tmp", ctx->path);
@@ -541,7 +541,7 @@ static int ogg_write_tags(oggtag_context_t *ctx,
     int tmp_fd = open(tmp_path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (tmp_fd < 0) {
         free(tmp_path);
-        for (int i = 0; i < num_header_packets; i++) buf_free(&packets[i]);
+        for (int i = 0; i < num_header_packets; i++) buffer_free(&packets[i]);
         return OGGTAG_ERR_IO;
     }
 
@@ -565,10 +565,10 @@ static int ogg_write_tags(oggtag_context_t *ctx,
                                    flags, granule, ctx->ogg_serial, &page_seq,
                                    &pages_written) < 0) {
             close(tmp_fd); unlink(tmp_path); free(tmp_path);
-            for (int j = 0; j < num_header_packets; j++) buf_free(&packets[j]);
+            for (int j = 0; j < num_header_packets; j++) buffer_free(&packets[j]);
             return OGGTAG_ERR_WRITE_FAILED;
         }
-        buf_free(&packets[i]);
+        buffer_free(&packets[i]);
     }
 
     /* Copy remaining pages from original file, adjusting page_seq */
@@ -623,9 +623,9 @@ int oggtag_write_tags(oggtag_context_t *ctx, const oggtag_collection_t *tags)
         return OGGTAG_ERR_NO_MEMORY;
 
     dyn_buffer_t buf;
-    buf_init(&buf);
+    buffer_init(&buf);
     if (vc_serialize(&vc, &buf) < 0) {
-        vc_free(&vc); buf_free(&buf);
+        vc_free(&vc); buffer_free(&buf);
         return OGGTAG_ERR_NO_MEMORY;
     }
     vc_free(&vc);
@@ -638,7 +638,7 @@ int oggtag_write_tags(oggtag_context_t *ctx, const oggtag_collection_t *tags)
     } else {
         rc = ogg_write_tags(ctx, buf.data, buf.size);
     }
-    buf_free(&buf);
+    buffer_free(&buf);
 
     /* Invalidate cache */
     if (ctx->cached_tags) {

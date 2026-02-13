@@ -3,7 +3,8 @@
  */
 
 #include "vorbis_comment.h"
-#include "../util/string_util.h"
+#include "../util/ogg_buffer_ext.h"
+#include <tag_common/string_util.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -119,10 +120,10 @@ int vc_serialize(const vorbis_comment_t *vc, dyn_buffer_t *buf)
 {
     const char *vendor = vc->vendor ? vc->vendor : "liboggtag";
     uint32_t vendor_len = (uint32_t)strlen(vendor);
-    if (buf_append_le32(buf, vendor_len) < 0) return -1;
-    if (buf_append(buf, vendor, vendor_len) < 0) return -1;
+    if (buffer_append_le32(buf, vendor_len) < 0) return -1;
+    if (buffer_append(buf, vendor, vendor_len) < 0) return -1;
 
-    if (buf_append_le32(buf, (uint32_t)vc->count) < 0) return -1;
+    if (buffer_append_le32(buf, (uint32_t)vc->count) < 0) return -1;
 
     for (size_t i = 0; i < vc->count; i++) {
         const char *key = vc->keys[i] ? vc->keys[i] : "";
@@ -130,10 +131,10 @@ int vc_serialize(const vorbis_comment_t *vc, dyn_buffer_t *buf)
         uint32_t klen = (uint32_t)strlen(key);
         uint32_t vlen = (uint32_t)strlen(val);
         uint32_t total = klen + 1 + vlen;  /* KEY=VALUE */
-        if (buf_append_le32(buf, total) < 0) return -1;
-        if (buf_append(buf, key, klen) < 0) return -1;
-        if (buf_append_u8(buf, '=') < 0) return -1;
-        if (buf_append(buf, val, vlen) < 0) return -1;
+        if (buffer_append_le32(buf, total) < 0) return -1;
+        if (buffer_append(buf, key, klen) < 0) return -1;
+        if (buffer_append_byte(buf, '=') < 0) return -1;
+        if (buffer_append(buf, val, vlen) < 0) return -1;
     }
     return 0;
 }

@@ -88,33 +88,39 @@ Tag names are normalized to canonical names shared across libmkvtag, libmp3tag, 
 
 Fields without a mapping are passed through unchanged.
 
+## Dependencies
+
+- [libtag_common](https://github.com/morganp/libtag_common) — shared I/O, buffer, and string utilities (included as git submodule)
+
 ## Building
 
-### CMake
+Clone with submodules:
 
 ```sh
-cmake -B build -DOGGTAG_BUILD_TESTS=ON
-cmake --build build
-ctest --test-dir build
+git clone --recursive https://github.com/morganp/liboggtag.git
 ```
 
-### Manual
+If already cloned:
 
 ```sh
-xcrun clang -c -std=c11 -Wall -Wextra -Wpedantic -I include -I src \
-    src/oggtag.c src/vorbis_comment/vorbis_comment.c \
-    src/ogg/ogg_stream.c src/ogg/ogg_crc.c \
-    src/flac/flac_meta.c src/io/file_io.c \
-    src/util/buffer.c src/util/string_util.c
-xcrun ar rcs liboggtag.a *.o
+git submodule update --init
 ```
 
 ### XCFramework (macOS + iOS)
 
 ```sh
-chmod +x build_xcframework.sh
 ./build_xcframework.sh
 # Output: build/xcframework/oggtag.xcframework
+```
+
+### Manual build
+
+```sh
+xcrun clang -c -std=c11 -Wall -Wextra -Wpedantic -I include -I src -I deps/libtag_common/include \
+    src/oggtag.c src/vorbis_comment/vorbis_comment.c \
+    src/ogg/ogg_stream.c src/ogg/ogg_crc.c \
+    src/flac/flac_meta.c src/io/file_io.c
+xcrun ar rcs liboggtag.a *.o
 ```
 
 ## License

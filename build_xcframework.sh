@@ -10,10 +10,10 @@ SOURCES=(
     src/ogg/ogg_crc.c
     src/flac/flac_meta.c
     src/io/file_io.c
-    src/util/buffer.c
-    src/util/string_util.c
 )
-CFLAGS="-std=c11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -O2 -I include -I src"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TAG_COMMON_DIR="${SCRIPT_DIR}/deps/libtag_common"
+CFLAGS="-std=c11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -O2 -I include -I src -I ${TAG_COMMON_DIR}/include"
 
 OUTPUT_DIR="build/xcframework"
 rm -rf "$OUTPUT_DIR"

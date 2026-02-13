@@ -6,12 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Build library and tests:
 ```sh
-cd build && xcrun clang -c -std=c11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -I ../include -I ../src \
+cd build && xcrun clang -c -std=c11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -I ../include -I ../src -I ../deps/libtag_common/include \
     ../src/oggtag.c ../src/vorbis_comment/vorbis_comment.c \
     ../src/ogg/ogg_stream.c ../src/ogg/ogg_crc.c \
     ../src/flac/flac_meta.c ../src/io/file_io.c \
-    ../src/util/buffer.c ../src/util/string_util.c \
-    && xcrun ar rcs liboggtag.a oggtag.o vorbis_comment.o ogg_stream.o ogg_crc.o flac_meta.o file_io.o buffer.o string_util.o
+    && xcrun ar rcs liboggtag.a oggtag.o vorbis_comment.o ogg_stream.o ogg_crc.o flac_meta.o file_io.o
 ```
 
 Build and run tests:
@@ -41,7 +40,7 @@ Pure C11 static library for reading/writing Vorbis Comment tags. No external dep
 - **Ogg** (`src/ogg/`) — Page reader/writer, CRC-32 (polynomial 0x04C11DB7), packet extraction, page rebuilding
 - **FLAC** (`src/flac/`) — Metadata block scanning, in-place VC writing with padding block reuse, full rewrite fallback
 - **I/O** (`src/io/`) — Buffered POSIX file I/O (8KB read buffer, lazy seek)
-- **Util** (`src/util/`) — Dynamic byte buffer (`dyn_buffer_t`), string helpers
+- **Shared utilities** (`deps/libtag_common/`) — Dynamic byte buffer, string helpers (via libtag_common submodule)
 
 ### Supported Formats
 

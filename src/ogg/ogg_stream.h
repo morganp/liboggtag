@@ -6,7 +6,6 @@
 #define OGG_STREAM_H
 
 #include "../io/file_io.h"
-#include "../util/buffer.h"
 #include <stddef.h>
 #include <stdint.h>
 
