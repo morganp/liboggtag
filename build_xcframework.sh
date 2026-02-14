@@ -10,6 +10,8 @@ SOURCES=(
     src/ogg/ogg_crc.c
     src/flac/flac_meta.c
     src/io/file_io.c
+    deps/libtag_common/src/buffer.c
+    deps/libtag_common/src/string_util.c
 )
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TAG_COMMON_DIR="${SCRIPT_DIR}/deps/libtag_common"

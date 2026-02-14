@@ -9,7 +9,8 @@
 
 #include "ogg/ogg_stream.h"
 #include "ogg/ogg_crc.h"
-#include "util/buffer.h"
+#include <tag_common/buffer.h>
+#include "util/ogg_buffer_ext.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,25 +63,25 @@ static void create_ogg_vorbis(const char *path)
 
     /* Packet 1: Vorbis comment header */
     dyn_buffer_t comment_pkt;
-    buf_init(&comment_pkt);
+    buffer_init(&comment_pkt);
     uint8_t vc_prefix[7] = { 0x03, 'v','o','r','b','i','s' };
-    buf_append(&comment_pkt, vc_prefix, 7);
+    buffer_append(&comment_pkt, vc_prefix, 7);
     /* Vendor string */
     const char *vendor = "test";
-    buf_append_le32(&comment_pkt, (uint32_t)strlen(vendor));
-    buf_append(&comment_pkt, vendor, strlen(vendor));
+    buffer_append_le32(&comment_pkt, (uint32_t)strlen(vendor));
+    buffer_append(&comment_pkt, vendor, strlen(vendor));
     /* 0 comments */
-    buf_append_le32(&comment_pkt, 0);
+    buffer_append_le32(&comment_pkt, 0);
     /* Framing bit */
-    buf_append_u8(&comment_pkt, 0x01);
+    buffer_append_byte(&comment_pkt, 0x01);
 
     /* Packet 2: Minimal setup header (just needs to exist) */
     dyn_buffer_t setup_pkt;
-    buf_init(&setup_pkt);
+    buffer_init(&setup_pkt);
     uint8_t setup_prefix[7] = { 0x05, 'v','o','r','b','i','s' };
-    buf_append(&setup_pkt, setup_prefix, 7);
+    buffer_append(&setup_pkt, setup_prefix, 7);
     /* Minimal codebook data - just enough for structure */
-    buf_append_zeros(&setup_pkt, 20);
+    buffer_append_zeros(&setup_pkt, 20);
 
     /* Write comment + setup as a single page (as Vorbis spec recommends) */
     /* Actually, write them as separate pages for simplicity */
@@ -89,8 +90,8 @@ static void create_ogg_vorbis(const char *path)
     ogg_write_packet_pages(fd, setup_pkt.data, setup_pkt.size,
                            0, 0, serial, &page_seq, NULL);
 
-    buf_free(&comment_pkt);
-    buf_free(&setup_pkt);
+    buffer_free(&comment_pkt);
+    buffer_free(&setup_pkt);
 
     /* One audio page with a tiny fake packet */
     uint8_t audio[10] = {0};
@@ -124,16 +125,16 @@ static void create_ogg_opus(const char *path)
 
     /* Packet 1: OpusTags */
     dyn_buffer_t tags_pkt;
-    buf_init(&tags_pkt);
-    buf_append(&tags_pkt, "OpusTags", 8);
+    buffer_init(&tags_pkt);
+    buffer_append(&tags_pkt, "OpusTags", 8);
     const char *vendor = "test";
-    buf_append_le32(&tags_pkt, (uint32_t)strlen(vendor));
-    buf_append(&tags_pkt, vendor, strlen(vendor));
-    buf_append_le32(&tags_pkt, 0); /* 0 comments */
+    buffer_append_le32(&tags_pkt, (uint32_t)strlen(vendor));
+    buffer_append(&tags_pkt, vendor, strlen(vendor));
+    buffer_append_le32(&tags_pkt, 0); /* 0 comments */
 
     ogg_write_packet_pages(fd, tags_pkt.data, tags_pkt.size,
                            0, 0, serial, &page_seq, NULL);
-    buf_free(&tags_pkt);
+    buffer_free(&tags_pkt);
 
     /* Audio page */
     uint8_t audio[10] = {0};

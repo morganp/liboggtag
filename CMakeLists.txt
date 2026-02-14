@@ -11,14 +11,15 @@ add_library(oggtag STATIC
     src/ogg/ogg_crc.c
     src/flac/flac_meta.c
     src/io/file_io.c
-    src/util/buffer.c
-    src/util/string_util.c
+    deps/libtag_common/src/buffer.c
+    deps/libtag_common/src/string_util.c
 )
 
 target_include_directories(oggtag
     PUBLIC  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
             $<INSTALL_INTERFACE:include>
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/deps/libtag_common/include
 )
 
 target_compile_options(oggtag PRIVATE

@@ -10,12 +10,13 @@ cd build && xcrun clang -c -std=c11 -Wall -Wextra -Wpedantic -Wno-unused-paramet
     ../src/oggtag.c ../src/vorbis_comment/vorbis_comment.c \
     ../src/ogg/ogg_stream.c ../src/ogg/ogg_crc.c \
     ../src/flac/flac_meta.c ../src/io/file_io.c \
-    && xcrun ar rcs liboggtag.a oggtag.o vorbis_comment.o ogg_stream.o ogg_crc.o flac_meta.o file_io.o
+    ../deps/libtag_common/src/buffer.c ../deps/libtag_common/src/string_util.c \
+    && xcrun ar rcs liboggtag.a oggtag.o vorbis_comment.o ogg_stream.o ogg_crc.o flac_meta.o file_io.o buffer.o string_util.o
 ```
 
 Build and run tests:
 ```sh
-cd build && xcrun clang -std=c11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -I ../include -I ../src \
+cd build && xcrun clang -std=c11 -Wall -Wextra -Wpedantic -Wno-unused-parameter -I ../include -I ../src -I ../deps/libtag_common/include \
     -o test_oggtag ../tests/test_oggtag.c -L. -loggtag && ./test_oggtag
 ```
 
